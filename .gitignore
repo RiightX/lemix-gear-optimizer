@@ -4,6 +4,7 @@
 *~
 .vscode/
 .idea/
+bin/
 
 *.md
 !README.md
