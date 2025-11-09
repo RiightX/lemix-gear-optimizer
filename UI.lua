@@ -210,14 +210,45 @@ function UI:ShowCreateProfileDialog()
         button1 = "Create",
         button2 = "Cancel",
         hasEditBox = true,
-        OnAccept = function(self)
-            local name = self.editBox:GetText()
+        OnShow = function(self)
+            self.editBox:SetFocus()
+        end,
+        OnAccept = function(dialog)
+            local editBox = dialog.editBox or _G[dialog:GetName().."EditBox"]
+            if not editBox then
+                addon:Print("Error: Could not access edit box")
+                return
+            end
+            local name = editBox:GetText()
             if name and name ~= "" then
                 local profile = addon.ProfileManager:CreateProfile(name)
                 if profile then
-                    UI:UpdateProfileList()
+                    addon.UI:UpdateProfileList()
+                    addon:Print("Profile created: " .. name)
+                end
+            else
+                addon:Print("Profile name cannot be empty")
+            end
+        end,
+        EditBoxOnEnterPressed = function(self)
+            local parent = self:GetParent()
+            local editBox = parent.editBox or _G[parent:GetName().."EditBox"]
+            if not editBox then
+                addon:Print("Error: Could not access edit box")
+                return
+            end
+            local name = editBox:GetText()
+            if name and name ~= "" then
+                local profile = addon.ProfileManager:CreateProfile(name)
+                if profile then
+                    addon.UI:UpdateProfileList()
+                    addon:Print("Profile created: " .. name)
                 end
             end
+            parent:Hide()
+        end,
+        EditBoxOnEscapePressed = function(self)
+            self:GetParent():Hide()
         end,
         timeout = 0,
         whileDead = true,
