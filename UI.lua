@@ -211,10 +211,12 @@ function UI:ShowCreateProfileDialog()
         button2 = "Cancel",
         hasEditBox = true,
         OnShow = function(self)
-            self.editBox:SetFocus()
+            if self.EditBox then
+                self.EditBox:SetFocus()
+            end
         end,
         OnAccept = function(dialog)
-            local editBox = dialog.editBox or _G[dialog:GetName().."EditBox"]
+            local editBox = dialog.EditBox or _G[dialog:GetName().."EditBox"]
             if not editBox then
                 addon:Print("Error: Could not access edit box")
                 return
@@ -232,7 +234,7 @@ function UI:ShowCreateProfileDialog()
         end,
         EditBoxOnEnterPressed = function(self)
             local parent = self:GetParent()
-            local editBox = parent.editBox or _G[parent:GetName().."EditBox"]
+            local editBox = parent.EditBox or _G[parent:GetName().."EditBox"]
             if not editBox then
                 addon:Print("Error: Could not access edit box")
                 return
