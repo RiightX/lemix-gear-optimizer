@@ -1,0 +1,23 @@
+name: Beta Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  beta:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout addon
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Package and release beta
+        uses: BigWigsMods/packager@master
+        with:
+          args: -w beta
+        env:
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}

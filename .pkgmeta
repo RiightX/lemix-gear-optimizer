@@ -1,0 +1,12 @@
+package-as: LemixGearOptimizer
+
+ignore:
+  - .github
+  - .gitignore
+  - README.md
+  - CHANGELOG.md
+  - PROJECT_SUMMARY.md
+  - QUICK_START.md
+  - INSTALLATION.md
+  - TESTING.md
+
