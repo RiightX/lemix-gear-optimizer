@@ -1,0 +1,17 @@
+## Interface: 110002
+## Title: Lemix Gear Optimizer
+## Notes: Optimizes gear for Legion Remix based on stat priorities
+## Author: YourName
+## Version: 1.0.0
+## SavedVariables: LemixGearOptimizerDB
+## DefaultState: enabled
+
+Locales.lua
+Core.lua
+ProfileManager.lua
+StatScanner.lua
+GearOptimizer.lua
+EquipmentManager.lua
+UI.xml
+UI.lua
+
