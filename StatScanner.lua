@@ -64,32 +64,23 @@ end
 function StatScanner:ParseStatLine(line)
     if not line or line == "" then return nil end
 
+    line = line:gsub("|r", "")
+    line = line:gsub("|c%x%x%x%x%x%x%x%x", "")
+
     local stats = {}
+    local value, stat
 
-    for value, stat in line:gmatch("([%d%.]+)%%%s*([%a%s]+)") do
-        local numValue = tonumber(value)
-        if not numValue then goto continue end
+    value, stat = line:match("^([%d%.%+%-,]+)%%%s*([%w%s%.]+)$")
 
-        local statUpper = stat:upper():gsub("%s+", "")
-
-        if statUpper == "HASTE" or statUpper:find("HASTE") then
-            stats.HASTE = (stats.HASTE or 0) + numValue
-        elseif statUpper:find("CRIT") then
-            stats.CRIT = (stats.CRIT or 0) + numValue
-        elseif statUpper:find("MAST") then
-            stats.MASTERY = (stats.MASTERY or 0) + numValue
-        elseif statUpper:find("VERS") then
-            stats.VERSATILITY = (stats.VERSATILITY or 0) + numValue
-        end
-
-        ::continue::
+    if not value or not stat then
+        stat, value = line:match("^([%w%s%.]+)%s+([%d%.%+%-,]+)%%$")
     end
 
-    if not next(stats) then
-        for stat, value in line:gmatch("([%a%s]+)%s+([%d%.]+)%%") do
-            local numValue = tonumber(value)
-            if not numValue then goto continue2 end
+    if value and stat then
+        value = value:gsub("[^%d%-%.%+]", "")
 
+        local numValue = tonumber(value)
+        if numValue then
             local statUpper = stat:upper():gsub("%s+", "")
 
             if statUpper == "HASTE" or statUpper:find("HASTE") then
@@ -101,8 +92,6 @@ function StatScanner:ParseStatLine(line)
             elseif statUpper:find("VERS") then
                 stats.VERSATILITY = (stats.VERSATILITY or 0) + numValue
             end
-
-            ::continue2::
         end
     end
 
