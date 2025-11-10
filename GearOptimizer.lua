@@ -107,38 +107,155 @@ function GearOptimizer:OptimizeGearGreedy(profile)
     local allGear = addon.StatScanner:GetAllAvailableGear()
     if not next(allGear) then return nil end
     
-    local bestSet = {}
-    local currentTotals = {
-        HASTE = 0,
-        CRIT = 0,
-        MASTERY = 0,
-        VERSATILITY = 0,
-    }
-    local usedItems = {}
-    
     local primaryStat = profile.primaryStat
     local thresholds = profile.thresholds or {}
     local secondaryStats = profile.secondaryStats or {}
+    
+    local hasThresholds = next(thresholds) ~= nil
+    
+    if hasThresholds then
+        return self:OptimizeWithThresholds(allGear, primaryStat, thresholds, secondaryStats)
+    else
+        return self:OptimizeSimple(allGear, primaryStat, secondaryStats)
+    end
+end
+
+function GearOptimizer:OptimizeWithThresholds(allGear, primaryStat, thresholds, secondaryStats)
+    local MAX_ITERATIONS = 1000
+    local iteration = 0
+    
+    local bestOverallSet = nil
+    local bestOverallScore = -math.huge
+    local bestOverallTotals = nil
+    
+    local sortedSlots = {}
+    for slotID in pairs(allGear) do
+        table.insert(sortedSlots, slotID)
+    end
+    table.sort(sortedSlots)
+    
+    local function tryConfiguration(slotIndex, currentSet, currentTotals, unmetThresholds)
+        iteration = iteration + 1
+        if iteration > MAX_ITERATIONS then return end
+        
+        if slotIndex > #sortedSlots then
+            local configScore = self:ScoreConfiguration(currentSet, currentTotals, primaryStat, thresholds, secondaryStats, unmetThresholds)
+            if configScore > bestOverallScore then
+                bestOverallScore = configScore
+                bestOverallSet = {}
+                bestOverallTotals = {}
+                for k, v in pairs(currentSet) do
+                    bestOverallSet[k] = v
+                end
+                for k, v in pairs(currentTotals) do
+                    bestOverallTotals[k] = v
+                end
+            end
+            return
+        end
+        
+        local slotID = sortedSlots[slotIndex]
+        local items = allGear[slotID]
+        
+        local sortedItems = {}
+        for _, item in ipairs(items) do
+            local itemScore = self:ScoreItemForThresholds(item, currentTotals, unmetThresholds, primaryStat)
+            table.insert(sortedItems, {item = item, score = itemScore})
+        end
+        table.sort(sortedItems, function(a, b) return a.score > b.score end)
+        
+        local itemsToTry = math.min(3, #sortedItems)
+        for i = 1, itemsToTry do
+            local item = sortedItems[i].item
+            
+            local newSet = {}
+            for k, v in pairs(currentSet) do newSet[k] = v end
+            newSet[slotID] = item
+            
+            local newTotals = {}
+            for k, v in pairs(currentTotals) do newTotals[k] = v end
+            if item.stats then
+                for stat, value in pairs(item.stats) do
+                    newTotals[stat] = newTotals[stat] + value
+                end
+            end
+            
+            local newUnmetThresholds = {}
+            for stat, threshold in pairs(thresholds) do
+                if newTotals[stat] < threshold then
+                    newUnmetThresholds[stat] = threshold
+                end
+            end
+            
+            tryConfiguration(slotIndex + 1, newSet, newTotals, newUnmetThresholds)
+        end
+    end
+    
+    local initialTotals = {HASTE = 0, CRIT = 0, MASTERY = 0, VERSATILITY = 0}
+    tryConfiguration(1, {}, initialTotals, thresholds)
+    
+    return bestOverallSet, bestOverallTotals
+end
+
+function GearOptimizer:ScoreItemForThresholds(item, currentTotals, unmetThresholds, primaryStat)
+    if not item or not item.stats then return 0 end
+    
+    local score = 0
+    
+    for stat, threshold in pairs(unmetThresholds) do
+        if item.stats[stat] then
+            local contribution = item.stats[stat]
+            score = score + (contribution * 10000)
+        end
+    end
+    
+    if primaryStat and item.stats[primaryStat] then
+        score = score + (item.stats[primaryStat] * 100)
+    end
+    
+    return score
+end
+
+function GearOptimizer:ScoreConfiguration(gearSet, totals, primaryStat, thresholds, secondaryStats, unmetThresholds)
+    local score = 0
+    
+    local thresholdPenalty = 0
+    for stat, threshold in pairs(thresholds) do
+        if totals[stat] < threshold then
+            local deficit = threshold - totals[stat]
+            thresholdPenalty = thresholdPenalty + (deficit * 1000000)
+        end
+    end
+    
+    score = score - thresholdPenalty
+    
+    if primaryStat and totals[primaryStat] then
+        score = score + (totals[primaryStat] * 1000)
+    end
+    
+    for i, statInfo in ipairs(secondaryStats) do
+        if totals[statInfo.stat] then
+            score = score + (totals[statInfo.stat] * (100 / i))
+        end
+    end
+    
+    return score
+end
+
+function GearOptimizer:OptimizeSimple(allGear, primaryStat, secondaryStats)
+    local bestSet = {}
+    local currentTotals = {HASTE = 0, CRIT = 0, MASTERY = 0, VERSATILITY = 0}
     
     for slotID, items in pairs(allGear) do
         local bestItem = nil
         local bestScore = -math.huge
         
         for _, item in ipairs(items) do
-            if item.stats and not usedItems[item.itemLink] then
+            if item.stats then
                 local score = 0
                 
                 if primaryStat and item.stats[primaryStat] then
                     score = score + (item.stats[primaryStat] * 1000)
-                end
-                
-                for stat, threshold in pairs(thresholds) do
-                    if item.stats[stat] then
-                        if currentTotals[stat] < threshold then
-                            local contribution = math.min(item.stats[stat], threshold - currentTotals[stat])
-                            score = score + (contribution * 800)
-                        end
-                    end
                 end
                 
                 for i, statInfo in ipairs(secondaryStats) do
@@ -156,7 +273,6 @@ function GearOptimizer:OptimizeGearGreedy(profile)
         
         if bestItem then
             bestSet[slotID] = bestItem
-            usedItems[bestItem.itemLink] = true
             if bestItem.stats then
                 for stat, value in pairs(bestItem.stats) do
                     currentTotals[stat] = currentTotals[stat] + value
