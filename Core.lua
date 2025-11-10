@@ -76,8 +76,16 @@ end
 SLASH_LEMIXGEAROPTIMIZER1 = "/lgo"
 SLASH_LEMIXGEAROPTIMIZER2 = "/lemixgear"
 SlashCmdList["LEMIXGEAROPTIMIZER"] = function(msg)
-    if addon.UI and addon.UI.ToggleConfigWindow then
-        addon.UI:ToggleConfigWindow()
+    msg = msg:lower():trim()
+    
+    if msg == "stats" or msg == "show" then
+        if addon.UI and addon.UI.ShowCurrentStats then
+            addon.UI:ShowCurrentStats()
+        end
+    else
+        if addon.UI and addon.UI.ToggleConfigWindow then
+            addon.UI:ToggleConfigWindow()
+        end
     end
 end
 

@@ -10,32 +10,32 @@ local equipmentManagerButton
 function UI:Initialize()
     configFrame = LemixGearOptimizerConfigFrame
     profileSelector = LemixGearOptimizerProfileSelector
-    
+
     self:SetupConfigFrame()
     self:SetupProfileSelector()
-    
+
     C_Timer.After(1, function()
         self:HookEquipmentManager()
     end)
-    
+
     addon:Debug("UI initialized")
 end
 
 function UI:SetupConfigFrame()
     if not configFrame then return end
-    
+
     configFrame.Title:SetText(addon.L.CONFIG_TITLE)
-    
+
     local content = configFrame.ScrollFrame.Content
-    
+
     local yOffset = -10
-    
+
     local specLabel = content:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     specLabel:SetPoint("TOPLEFT", 10, yOffset)
     specLabel:SetText("Current Spec Profiles")
-    
+
     yOffset = yOffset - 30
-    
+
     local createButton = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
     createButton:SetSize(150, 25)
     createButton:SetPoint("TOPLEFT", 10, yOffset)
@@ -44,7 +44,7 @@ function UI:SetupConfigFrame()
         self:ShowCreateProfileDialog()
     end)
     content.createButton = createButton
-    
+
     local optimizeButton = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
     optimizeButton:SetSize(150, 25)
     optimizeButton:SetPoint("LEFT", createButton, "RIGHT", 10, 0)
@@ -54,15 +54,24 @@ function UI:SetupConfigFrame()
     end)
     content.optimizeButton = optimizeButton
     
+    local showStatsButton = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
+    showStatsButton:SetSize(150, 25)
+    showStatsButton:SetPoint("LEFT", optimizeButton, "RIGHT", 10, 0)
+    showStatsButton:SetText("Show Current Stats")
+    showStatsButton:SetScript("OnClick", function()
+        self:ShowCurrentStats()
+    end)
+    content.showStatsButton = showStatsButton
+
     yOffset = yOffset - 35
-    
+
     local profileListFrame = CreateFrame("Frame", nil, content)
     profileListFrame:SetSize(520, 300)
     profileListFrame:SetPoint("TOPLEFT", 10, yOffset)
     content.profileListFrame = profileListFrame
-    
+
     yOffset = yOffset - 310
-    
+
     local autoEquipCheck = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
     autoEquipCheck:SetPoint("TOPLEFT", 10, yOffset)
     autoEquipCheck.Text:SetText(addon.L.AUTO_EQUIP)
@@ -71,15 +80,15 @@ function UI:SetupConfigFrame()
         addon.db.settings.autoEquipOnSpecChange = self:GetChecked()
         addon:Print("Auto-equip " .. (self:GetChecked() and "enabled" or "disabled"))
     end)
-    
+
     content.autoEquipCheck = autoEquipCheck
 end
 
 function UI:SetupProfileSelector()
     if not profileSelector then return end
-    
+
     profileSelector.Title:SetText("Select Profile")
-    
+
     profileSelector.CloseButton = profileSelector.CloseButton or _G[profileSelector:GetName() .. "CloseButton"]
     if profileSelector.CloseButton then
         profileSelector.CloseButton:SetScript("OnClick", function()
@@ -99,16 +108,16 @@ end
 
 function UI:UpdateProfileList()
     if not configFrame then return end
-    
+
     local content = configFrame.ScrollFrame.Content
     local profileListFrame = content.profileListFrame
     if not profileListFrame then return end
-    
+
     for _, child in ipairs({profileListFrame:GetChildren()}) do
         child:Hide()
         child:SetParent(nil)
     end
-    
+
     local specID = addon.ProfileManager:GetCurrentSpec()
     if not specID then
         local noSpec = profileListFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
@@ -116,18 +125,18 @@ function UI:UpdateProfileList()
         noSpec:SetText("No specialization selected")
         return
     end
-    
+
     local profiles = addon.ProfileManager:GetSpecProfiles(specID)
-    
+
     if not profiles or #profiles == 0 then
         local noProfiles = profileListFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
         noProfiles:SetPoint("TOPLEFT", 0, 0)
         noProfiles:SetText(addon.L.NO_PROFILES)
         return
     end
-    
+
     local yOffset = 0
-    
+
     for i, profile in ipairs(profiles) do
         local frame = CreateFrame("Frame", nil, profileListFrame, "BackdropTemplate")
         frame:SetSize(500, 80)
@@ -142,11 +151,11 @@ function UI:UpdateProfileList()
         })
         frame:SetBackdropColor(0.1, 0.1, 0.1, 0.8)
         frame:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
-        
+
         local nameLabel = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
         nameLabel:SetPoint("TOPLEFT", 10, -10)
         nameLabel:SetText(profile.name)
-        
+
         local statsLabel = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
         statsLabel:SetPoint("TOPLEFT", 10, -30)
         local statsText = "Primary: " .. (profile.primaryStat or "None")
@@ -157,7 +166,7 @@ function UI:UpdateProfileList()
             end
         end
         statsLabel:SetText(statsText)
-        
+
         local equipButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
         equipButton:SetSize(80, 22)
         equipButton:SetPoint("TOPRIGHT", -10, -10)
@@ -165,7 +174,7 @@ function UI:UpdateProfileList()
         equipButton:SetScript("OnClick", function()
             self:EquipProfile(profile.name)
         end)
-        
+
         local editButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
         editButton:SetSize(60, 22)
         editButton:SetPoint("RIGHT", equipButton, "LEFT", -5, 0)
@@ -173,7 +182,7 @@ function UI:UpdateProfileList()
         editButton:SetScript("OnClick", function()
             self:ShowEditProfileDialog(profile)
         end)
-        
+
         local deleteButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
         deleteButton:SetSize(60, 22)
         deleteButton:SetPoint("TOPRIGHT", -10, -38)
@@ -181,7 +190,7 @@ function UI:UpdateProfileList()
         deleteButton:SetScript("OnClick", function()
             self:DeleteProfile(profile.name)
         end)
-        
+
         local setActiveButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
         setActiveButton:SetSize(80, 22)
         setActiveButton:SetPoint("RIGHT", deleteButton, "LEFT", -5, 0)
@@ -190,7 +199,7 @@ function UI:UpdateProfileList()
             addon.ProfileManager:SetActiveProfile(profile.name)
             self:UpdateProfileList()
         end)
-        
+
         local activeProfile = addon.ProfileManager:GetActiveProfile(specID)
         if activeProfile and activeProfile.name == profile.name then
             frame:SetBackdropColor(0.1, 0.3, 0.1, 0.8)
@@ -199,7 +208,7 @@ function UI:UpdateProfileList()
             activeLabel:SetText("(Active)")
             activeLabel:SetTextColor(0, 1, 0)
         end
-        
+
         yOffset = yOffset - 90
     end
 end
@@ -262,7 +271,7 @@ end
 
 function UI:ShowEditProfileDialog(profile)
     if not profile then return end
-    
+
     local editFrame = CreateFrame("Frame", "LemixEditProfileFrame", UIParent, "BackdropTemplate")
     editFrame:SetSize(400, 350)
     editFrame:SetPoint("CENTER")
@@ -276,22 +285,22 @@ function UI:ShowEditProfileDialog(profile)
     })
     editFrame:SetFrameStrata("DIALOG")
     editFrame:EnableMouse(true)
-    
+
     local title = editFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     title:SetPoint("TOP", 0, -20)
     title:SetText("Edit Profile: " .. profile.name)
-    
+
     local yOffset = -60
-    
+
     local primaryLabel = editFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     primaryLabel:SetPoint("TOPLEFT", 20, yOffset)
     primaryLabel:SetText("Primary Stat:")
-    
+
     local primaryDropdown = CreateFrame("Frame", "LemixPrimaryStatDropdown", editFrame, "UIDropDownMenuTemplate")
     primaryDropdown:SetPoint("LEFT", primaryLabel, "RIGHT", 0, -3)
     UIDropDownMenu_SetWidth(primaryDropdown, 100)
     UIDropDownMenu_SetText(primaryDropdown, profile.primaryStat or "None")
-    
+
     UIDropDownMenu_Initialize(primaryDropdown, function(self, level)
         local stats = {"HASTE", "CRIT", "MASTERY", "VERSATILITY"}
         for _, stat in ipairs(stats) do
@@ -304,26 +313,26 @@ function UI:ShowEditProfileDialog(profile)
             UIDropDownMenu_AddButton(info)
         end
     end)
-    
+
     yOffset = yOffset - 40
-    
+
     local thresholdLabel = editFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     thresholdLabel:SetPoint("TOPLEFT", 20, yOffset)
     thresholdLabel:SetText("Stat Thresholds:")
-    
+
     yOffset = yOffset - 30
-    
+
     local thresholdContainer = CreateFrame("Frame", nil, editFrame)
     thresholdContainer:SetSize(360, 100)
     thresholdContainer:SetPoint("TOPLEFT", 20, yOffset)
-    
+
     local thresholdY = 0
     local stats = {"CRIT", "HASTE", "MASTERY"}
     for _, stat in ipairs(stats) do
         local statLabel = thresholdContainer:CreateFontString(nil, "ARTWORK", "GameFontNormal")
         statLabel:SetPoint("TOPLEFT", 0, thresholdY)
         statLabel:SetText(stat .. ":")
-        
+
         local editBox = CreateFrame("EditBox", nil, thresholdContainer, "InputBoxTemplate")
         editBox:SetSize(60, 20)
         editBox:SetPoint("LEFT", statLabel, "RIGHT", 10, 0)
@@ -346,20 +355,21 @@ function UI:ShowEditProfileDialog(profile)
             end
             self:ClearFocus()
         end)
-        
+
         thresholdY = thresholdY - 30
     end
-    
+
     local saveButton = CreateFrame("Button", nil, editFrame, "UIPanelButtonTemplate")
     saveButton:SetSize(100, 25)
     saveButton:SetPoint("BOTTOM", -55, 20)
     saveButton:SetText("Save")
     saveButton:SetScript("OnClick", function()
         addon:Print("Profile updated: " .. profile.name)
+        addon:Print("Click 'Optimize Gear' to recalculate with new settings")
         editFrame:Hide()
         UI:UpdateProfileList()
     end)
-    
+
     local cancelButton = CreateFrame("Button", nil, editFrame, "UIPanelButtonTemplate")
     cancelButton:SetSize(100, 25)
     cancelButton:SetPoint("LEFT", saveButton, "RIGHT", 10, 0)
@@ -367,7 +377,7 @@ function UI:ShowEditProfileDialog(profile)
     cancelButton:SetScript("OnClick", function()
         editFrame:Hide()
     end)
-    
+
     editFrame:Show()
 end
 
@@ -391,9 +401,9 @@ end
 function UI:EquipProfile(profileName)
     local specID = addon.ProfileManager:GetCurrentSpec()
     if not specID then return end
-    
+
     addon.GearOptimizer:OptimizeAndSave(profileName, specID)
-    
+
     C_Timer.After(0.5, function()
         addon.GearOptimizer:EquipOptimizedSet(profileName, specID)
     end)
@@ -415,6 +425,25 @@ function UI:OptimizeCurrentProfile()
     addon.GearOptimizer:OptimizeAndSave(activeProfile.name, specID)
 end
 
+function UI:ShowCurrentStats()
+    if not addon.StatScanner then
+        addon:Print("StatScanner not available")
+        return
+    end
+    
+    local equipped = addon.StatScanner:GetEquippedItems()
+    local totals = addon.StatScanner:CalculateTotalStats(equipped)
+    
+    addon:Print("=== Currently Equipped Stats ===")
+    local statOrder = {"CRIT", "HASTE", "MASTERY", "VERSATILITY"}
+    for _, stat in ipairs(statOrder) do
+        local value = totals[stat]
+        if value and value > 0 then
+            addon:Print(stat .. ": " .. string.format("%.1f%%", value))
+        end
+    end
+end
+
 function UI:HookEquipmentManager()
     if PaperDollFrame and not equipmentManagerButton then
         self:CreateEquipmentManagerButton()
@@ -423,14 +452,14 @@ end
 
 function UI:CreateEquipmentManagerButton()
     if equipmentManagerButton then return end
-    
+
     if not PaperDollFrame then
         C_Timer.After(2, function()
             self:CreateEquipmentManagerButton()
         end)
         return
     end
-    
+
     equipmentManagerButton = CreateFrame("Button", "LemixGearOptimizerButton", PaperDollFrame, "UIPanelButtonTemplate")
     equipmentManagerButton:SetSize(120, 22)
     equipmentManagerButton:SetPoint("BOTTOMLEFT", PaperDollFrame, "BOTTOMLEFT", 15, 80)
@@ -438,20 +467,20 @@ function UI:CreateEquipmentManagerButton()
     equipmentManagerButton:SetScript("OnClick", function()
         self:ShowProfileSelectorForEquip()
     end)
-    
+
     addon:Debug("Equipment Manager button created")
 end
 
 function UI:ShowProfileSelectorForEquip()
     if not profileSelector then return end
-    
+
     local content = profileSelector.ScrollFrame.Content
-    
+
     for _, child in ipairs({content:GetChildren()}) do
         child:Hide()
         child:SetParent(nil)
     end
-    
+
     local specID = addon.ProfileManager:GetCurrentSpec()
     if not specID then
         local noSpec = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
@@ -460,9 +489,9 @@ function UI:ShowProfileSelectorForEquip()
         profileSelector:Show()
         return
     end
-    
+
     local profiles = addon.ProfileManager:GetSpecProfiles(specID)
-    
+
     if not profiles or #profiles == 0 then
         local noProfiles = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
         noProfiles:SetPoint("TOPLEFT", 0, 0)
@@ -470,9 +499,9 @@ function UI:ShowProfileSelectorForEquip()
         profileSelector:Show()
         return
     end
-    
+
     local yOffset = 0
-    
+
     for i, profile in ipairs(profiles) do
         local button = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
         button:SetSize(220, 30)
@@ -482,10 +511,10 @@ function UI:ShowProfileSelectorForEquip()
             self:EquipProfile(profile.name)
             profileSelector:Hide()
         end)
-        
+
         yOffset = yOffset - 35
     end
-    
+
     local configButton = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
     configButton:SetSize(220, 30)
     configButton:SetPoint("TOPLEFT", 10, yOffset - 10)
@@ -494,7 +523,7 @@ function UI:ShowProfileSelectorForEquip()
         profileSelector:Hide()
         self:ToggleConfigWindow()
     end)
-    
+
     profileSelector:Show()
 end
 

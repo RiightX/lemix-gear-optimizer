@@ -198,6 +198,14 @@ function GearOptimizer:OptimizeAndSave(profileName, specID)
     end
     
     addon:Print("Optimizing gear for profile: " .. profileName)
+    addon:Print("  Primary stat: " .. (profile.primaryStat or "None"))
+    if profile.thresholds and next(profile.thresholds) then
+        local threshStr = "  Thresholds: "
+        for stat, value in pairs(profile.thresholds) do
+            threshStr = threshStr .. stat .. " " .. value .. "%, "
+        end
+        addon:Print(threshStr)
+    end
     
     local gearSet, totals = self:OptimizeGearGreedy(profile)
     
@@ -214,14 +222,27 @@ function GearOptimizer:OptimizeAndSave(profileName, specID)
     
     addon:Print("Optimization complete!")
     if totals then
-        local statStr = ""
-        for stat, value in pairs(totals) do
-            if value > 0 then
-                statStr = statStr .. stat .. ": " .. string.format("%.1f%%", value) .. " "
+        local statOrder = {"CRIT", "HASTE", "MASTERY", "VERSATILITY"}
+        local statStr = "Optimized stats: "
+        for _, stat in ipairs(statOrder) do
+            local value = totals[stat]
+            if value and value > 0 then
+                statStr = statStr .. stat .. ": " .. string.format("%.1f%%", value) .. " | "
             end
         end
-        addon:Print("Total stats: " .. statStr)
+        addon:Print(statStr)
+        
+        if profile.thresholds then
+            for stat, threshold in pairs(profile.thresholds) do
+                local current = totals[stat] or 0
+                if current < threshold then
+                    addon:Print("WARNING: Could not reach " .. stat .. " threshold of " .. threshold .. "% (got " .. string.format("%.1f%%", current) .. ")")
+                end
+            end
+        end
     end
+    
+    addon:Print("Click 'Equip Set' to equip the optimized gear")
     
     return true, gearSet, totals
 end
