@@ -45,6 +45,7 @@ function ProfileManager:CreateProfile(name, specID)
         primaryStat = "HASTE",
         thresholds = {},
         secondaryStats = {},
+        traits = {},
     }
     
     table.insert(addon.db.profiles[specID], profile)

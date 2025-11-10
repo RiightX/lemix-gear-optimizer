@@ -110,14 +110,41 @@ function GearOptimizer:OptimizeGearGreedy(profile)
     local primaryStat = profile.primaryStat
     local thresholds = profile.thresholds or {}
     local secondaryStats = profile.secondaryStats or {}
+    local traits = profile.traits or {}
     
+    local TRAIT_SLOTS = {[2] = true, [11] = true, [12] = true, [13] = true, [14] = true}
+    
+    local statGear = {}
+    local traitGear = {}
+    
+    for slotID, items in pairs(allGear) do
+        if TRAIT_SLOTS[slotID] then
+            traitGear[slotID] = items
+        else
+            statGear[slotID] = items
+        end
+    end
+    
+    local bestSet, totals
     local hasThresholds = next(thresholds) ~= nil
     
     if hasThresholds then
-        return self:OptimizeWithThresholds(allGear, primaryStat, thresholds, secondaryStats)
+        bestSet, totals = self:OptimizeWithThresholds(statGear, primaryStat, thresholds, secondaryStats)
     else
-        return self:OptimizeSimple(allGear, primaryStat, secondaryStats)
+        bestSet, totals = self:OptimizeSimple(statGear, primaryStat, secondaryStats)
     end
+    
+    if not bestSet then
+        bestSet = {}
+        totals = {HASTE = 0, CRIT = 0, MASTERY = 0, VERSATILITY = 0}
+    end
+    
+    local traitSet = self:OptimizeTraits(traitGear, traits)
+    for slotID, item in pairs(traitSet) do
+        bestSet[slotID] = item
+    end
+    
+    return bestSet, totals
 end
 
 function GearOptimizer:OptimizeWithThresholds(allGear, primaryStat, thresholds, secondaryStats)
@@ -213,6 +240,8 @@ function GearOptimizer:ScoreItemForThresholds(item, currentTotals, unmetThreshol
         score = score + (item.stats[primaryStat] * 100)
     end
     
+    score = score + ((item.itemLevel or 0) * 0.1)
+    
     return score
 end
 
@@ -264,9 +293,15 @@ function GearOptimizer:OptimizeSimple(allGear, primaryStat, secondaryStats)
                     end
                 end
                 
+                score = score + ((item.itemLevel or 0) * 0.1)
+                
                 if score > bestScore then
                     bestScore = score
                     bestItem = item
+                elseif score == bestScore and bestItem then
+                    if (item.itemLevel or 0) > (bestItem.itemLevel or 0) then
+                        bestItem = item
+                    end
                 end
             end
         end
@@ -282,6 +317,60 @@ function GearOptimizer:OptimizeSimple(allGear, primaryStat, secondaryStats)
     end
     
     return bestSet, currentTotals
+end
+
+function GearOptimizer:OptimizeTraits(traitGear, traitPrefs)
+    local bestSet = {}
+    local usedTraits = {}
+    
+    for trait, count in pairs(traitPrefs) do
+        usedTraits[trait] = 0
+    end
+    
+    local sortedSlots = {}
+    for slotID in pairs(traitGear) do
+        table.insert(sortedSlots, slotID)
+    end
+    table.sort(sortedSlots)
+    
+    for _, slotID in ipairs(sortedSlots) do
+        local items = traitGear[slotID]
+        local bestItem = nil
+        local bestScore = -math.huge
+        
+        for _, item in ipairs(items) do
+            local score = 0
+            
+            if item.trait and traitPrefs[item.trait] then
+                local currentCount = usedTraits[item.trait] or 0
+                local desiredCount = traitPrefs[item.trait]
+                
+                if currentCount < desiredCount then
+                    score = score + 100000
+                end
+            end
+            
+            score = score + ((item.itemLevel or 0) * 100)
+            
+            if score > bestScore then
+                bestScore = score
+                bestItem = item
+            elseif score == bestScore and bestItem then
+                if (item.itemLevel or 0) > (bestItem.itemLevel or 0) then
+                    bestItem = item
+                end
+            end
+        end
+        
+        if bestItem then
+            bestSet[slotID] = bestItem
+            if bestItem.trait then
+                usedTraits[bestItem.trait] = (usedTraits[bestItem.trait] or 0) + 1
+            end
+        end
+    end
+    
+    return bestSet
 end
 
 function GearOptimizer:GetOptimizedSet(profileName, specID)
@@ -354,6 +443,29 @@ function GearOptimizer:OptimizeAndSave(profileName, specID)
                 if current < threshold then
                     addon:Print("WARNING: Could not reach " .. stat .. " threshold of " .. threshold .. "% (got " .. string.format("%.1f%%", current) .. ")")
                 end
+            end
+        end
+    end
+    
+    if gearSet and profile.traits and next(profile.traits) then
+        local equippedTraits = {}
+        local TRAIT_SLOTS = {[2] = true, [11] = true, [12] = true, [13] = true, [14] = true}
+        for slotID, item in pairs(gearSet) do
+            if TRAIT_SLOTS[slotID] and item.trait then
+                equippedTraits[item.trait] = (equippedTraits[item.trait] or 0) + 1
+            end
+        end
+        
+        local traitStr = "Traits: "
+        for trait, count in pairs(equippedTraits) do
+            traitStr = traitStr .. trait .. " x" .. count .. " | "
+        end
+        addon:Print(traitStr)
+        
+        for trait, desiredCount in pairs(profile.traits) do
+            local actualCount = equippedTraits[trait] or 0
+            if actualCount < desiredCount then
+                addon:Print("WARNING: Could not equip " .. desiredCount .. "x " .. trait .. " (got " .. actualCount .. ")")
             end
         end
     end

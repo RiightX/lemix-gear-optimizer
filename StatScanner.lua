@@ -24,6 +24,27 @@ local INVENTORY_SLOTS = {
     [17] = "SECONDARYHANDSLOT",
 }
 
+local TRAIT_SLOTS = {
+    [2] = true,
+    [11] = true,
+    [12] = true,
+    [13] = true,
+    [14] = true,
+}
+
+local KNOWN_TRAITS = {
+    "Touch of Malice",
+    "Lure of the Unknown Depths",
+    "Storm Surger",
+    "Thunderlord's Wrath",
+    "Fel Meteor",
+    "Chaos Nova",
+    "Void Tendril",
+    "Fel Burst",
+    "Holy Nova",
+    "Light's Judgment",
+}
+
 function StatScanner:Initialize()
     scanTooltip = CreateFrame("GameTooltip", "LemixGearOptimizerScanTooltip", UIParent, "GameTooltipTemplate")
     scanTooltip:SetOwner(UIParent, "ANCHOR_NONE")
@@ -65,7 +86,7 @@ function StatScanner:ScanItemTooltip(itemLink)
     if not itemLink then return nil end
     
     if itemCache[itemLink] then
-        return itemCache[itemLink]
+        return itemCache[itemLink].stats, itemCache[itemLink].trait, itemCache[itemLink].itemLevel
     end
     
     scanTooltip:ClearLines()
@@ -78,6 +99,9 @@ function StatScanner:ScanItemTooltip(itemLink)
         VERSATILITY = 0,
     }
     
+    local trait = nil
+    local itemLevel = select(4, C_Item.GetItemInfo(itemLink)) or 0
+    
     local numLines = scanTooltip:NumLines()
     for i = 1, numLines do
         local leftText = _G["LemixGearOptimizerScanTooltipTextLeft" .. i]
@@ -89,6 +113,10 @@ function StatScanner:ScanItemTooltip(itemLink)
                     for stat, value in pairs(lineStats) do
                         stats[stat] = stats[stat] + value
                     end
+                end
+                
+                if not trait then
+                    trait = self:ParseTraitLine(line)
                 end
             end
         end
@@ -115,9 +143,23 @@ function StatScanner:ScanItemTooltip(itemLink)
         end
     end
     
-    if hasStats then
-        itemCache[itemLink] = stats
-        return stats
+    local cacheData = {
+        stats = hasStats and stats or nil,
+        trait = trait,
+        itemLevel = itemLevel,
+    }
+    
+    itemCache[itemLink] = cacheData
+    return cacheData.stats, cacheData.trait, cacheData.itemLevel
+end
+
+function StatScanner:ParseTraitLine(line)
+    if not line then return nil end
+    
+    for _, trait in ipairs(KNOWN_TRAITS) do
+        if line:find(trait) then
+            return trait
+        end
     end
     
     return nil
@@ -129,14 +171,15 @@ function StatScanner:GetEquippedItems()
     for slotID, slotName in pairs(INVENTORY_SLOTS) do
         local itemLink = GetInventoryItemLink("player", slotID)
         if itemLink then
-            local stats = self:ScanItemTooltip(itemLink)
-            if stats then
-                equipped[slotID] = {
-                    itemLink = itemLink,
-                    slotName = slotName,
-                    stats = stats,
-                }
-            end
+            local stats, trait, itemLevel = self:ScanItemTooltip(itemLink)
+            equipped[slotID] = {
+                itemLink = itemLink,
+                slotName = slotName,
+                stats = stats,
+                trait = trait,
+                itemLevel = itemLevel,
+                isTraitSlot = TRAIT_SLOTS[slotID] or false,
+            }
         end
     end
     
@@ -156,21 +199,22 @@ function StatScanner:GetBagItems()
                     local itemEquipLoc = select(4, C_Item.GetItemInfoInstant(itemLink))
                     
                     if itemEquipLoc and itemEquipLoc ~= "" and itemEquipLoc ~= "INVTYPE_BAG" then
-                        local stats = self:ScanItemTooltip(itemLink)
-                        if stats then
-                            local slotIDs = self:GetSlotIDsFromEquipLoc(itemEquipLoc)
-                            for _, slotID in ipairs(slotIDs) do
-                                if not bagItems[slotID] then
-                                    bagItems[slotID] = {}
-                                end
-                                
-                                table.insert(bagItems[slotID], {
-                                    itemLink = itemLink,
-                                    bag = bag,
-                                    slot = slot,
-                                    stats = stats,
-                                })
+                        local stats, trait, itemLevel = self:ScanItemTooltip(itemLink)
+                        local slotIDs = self:GetSlotIDsFromEquipLoc(itemEquipLoc)
+                        for _, slotID in ipairs(slotIDs) do
+                            if not bagItems[slotID] then
+                                bagItems[slotID] = {}
                             end
+                            
+                            table.insert(bagItems[slotID], {
+                                itemLink = itemLink,
+                                bag = bag,
+                                slot = slot,
+                                stats = stats,
+                                trait = trait,
+                                itemLevel = itemLevel,
+                                isTraitSlot = TRAIT_SLOTS[slotID] or false,
+                            })
                         end
                     end
                 end
@@ -251,7 +295,7 @@ function StatScanner:CalculateTotalStats(itemSet)
     }
     
     for slotID, item in pairs(itemSet) do
-        if item and item.stats then
+        if item and item.stats and not TRAIT_SLOTS[slotID] then
             for stat, value in pairs(item.stats) do
                 total[stat] = total[stat] + value
             end
@@ -259,6 +303,22 @@ function StatScanner:CalculateTotalStats(itemSet)
     end
     
     return total
+end
+
+function StatScanner:GetEquippedTraits()
+    local traits = {}
+    
+    for slotID in pairs(TRAIT_SLOTS) do
+        local itemLink = GetInventoryItemLink("player", slotID)
+        if itemLink then
+            local _, trait = self:ScanItemTooltip(itemLink)
+            if trait then
+                traits[trait] = (traits[trait] or 0) + 1
+            end
+        end
+    end
+    
+    return traits
 end
 
 function StatScanner:ClearCache()
