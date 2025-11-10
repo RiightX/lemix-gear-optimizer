@@ -5,9 +5,8 @@
 .vscode/
 .idea/
 bin/
+otheraddons/
 
 *.md
 !README.md
 !CHANGELOG.md
-
-otheraddons/

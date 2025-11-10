@@ -248,7 +248,7 @@ function StatScanner:GetBagItems()
                     local itemEquipLoc = select(4, C_Item.GetItemInfoInstant(itemLink))
                     
                     if itemEquipLoc and itemEquipLoc ~= "" and itemEquipLoc ~= "INVTYPE_BAG" then
-                        local stats, trait, itemLevel = self:ScanItemTooltip(itemLink)
+                        local stats, trait, itemLevel = self:ScanItemTooltipFromBag(bag, slot, itemLink)
                         local slotIDs = self:GetSlotIDsFromEquipLoc(itemEquipLoc)
                         for _, slotID in ipairs(slotIDs) do
                             if not bagItems[slotID] then
@@ -272,6 +272,89 @@ function StatScanner:GetBagItems()
     end
     
     return bagItems
+end
+
+function StatScanner:ScanItemTooltipFromBag(bag, slot, itemLink)
+    if not itemLink then return nil end
+    
+    if itemCache[itemLink] then
+        return itemCache[itemLink].stats, itemCache[itemLink].trait, itemCache[itemLink].itemLevel
+    end
+    
+    scanTooltip:ClearLines()
+    scanTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+    scanTooltip:SetBagItem(bag, slot)
+    
+    local stats = {
+        HASTE = 0,
+        CRIT = 0,
+        MASTERY = 0,
+        VERSATILITY = 0,
+    }
+    
+    local trait = nil
+    
+    local itemID = tonumber(itemLink:match("item:(%d+)"))
+    local itemLevel = 0
+    if itemID then
+        local itemInfo = {C_Item.GetItemInfo(itemLink)}
+        if itemInfo and itemInfo[4] then
+            itemLevel = itemInfo[4]
+        end
+    end
+    
+    local numLines = scanTooltip:NumLines()
+    for i = 1, numLines do
+        local leftText = _G["LemixGearOptimizerScanTooltipTextLeft" .. i]
+        if leftText then
+            local line = leftText:GetText()
+            if line then
+                if addon.db and addon.db.settings and addon.db.settings.debug then
+                    addon:Debug("Bag item line " .. i .. ": " .. line)
+                end
+                
+                local lineStats = self:ParseStatLine(line)
+                if lineStats then
+                    for stat, value in pairs(lineStats) do
+                        stats[stat] = stats[stat] + value
+                    end
+                end
+                
+                if not trait then
+                    trait = self:ParseTraitLine(line)
+                end
+            end
+        end
+    end
+    
+    scanTooltip:Hide()
+    
+    local hasStats = false
+    for _, value in pairs(stats) do
+        if value > 0 then
+            hasStats = true
+            break
+        end
+    end
+    
+    if hasStats and addon.db and addon.db.settings and addon.db.settings.debug then
+        local debugStr = "Parsed bag item " .. itemLink .. ": "
+        for stat, value in pairs(stats) do
+            if value > 0 then
+                debugStr = debugStr .. stat .. "=" .. value .. "% "
+            end
+        end
+        addon:Debug(debugStr)
+    end
+    
+    local cacheData = {
+        stats = hasStats and stats or nil,
+        trait = trait,
+        itemLevel = itemLevel,
+    }
+    
+    itemCache[itemLink] = cacheData
+    return cacheData.stats, cacheData.trait, cacheData.itemLevel
 end
 
 function StatScanner:GetSlotIDFromEquipLoc(equipLoc)
