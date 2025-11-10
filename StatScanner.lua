@@ -48,7 +48,7 @@ local KNOWN_TRAITS = {
 function StatScanner:Initialize()
     scanTooltip = CreateFrame("GameTooltip", "LemixGearOptimizerScanTooltip", UIParent, "GameTooltipTemplate")
     scanTooltip:SetOwner(UIParent, "ANCHOR_NONE")
-    
+
     self.frame = CreateFrame("Frame")
     self.frame:RegisterEvent("BAG_UPDATE")
     self.frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
@@ -57,21 +57,21 @@ function StatScanner:Initialize()
             itemCache = {}
         end
     end)
-    
+
     addon:Debug("StatScanner initialized")
 end
 
 function StatScanner:ParseStatLine(line)
     if not line or line == "" then return nil end
-    
+
     local stats = {}
-    
+
     for value, stat in line:gmatch("([%d%.]+)%%%s*([%a%s]+)") do
         local numValue = tonumber(value)
         if not numValue then goto continue end
-        
+
         local statUpper = stat:upper():gsub("%s+", "")
-        
+
         if statUpper == "HASTE" or statUpper:find("HASTE") then
             stats.HASTE = (stats.HASTE or 0) + numValue
         elseif statUpper:find("CRIT") then
@@ -81,17 +81,17 @@ function StatScanner:ParseStatLine(line)
         elseif statUpper:find("VERS") then
             stats.VERSATILITY = (stats.VERSATILITY or 0) + numValue
         end
-        
+
         ::continue::
     end
-    
+
     if not next(stats) then
         for stat, value in line:gmatch("([%a%s]+)%s+([%d%.]+)%%") do
             local numValue = tonumber(value)
             if not numValue then goto continue2 end
-            
+
             local statUpper = stat:upper():gsub("%s+", "")
-            
+
             if statUpper == "HASTE" or statUpper:find("HASTE") then
                 stats.HASTE = (stats.HASTE or 0) + numValue
             elseif statUpper:find("CRIT") then
@@ -101,33 +101,33 @@ function StatScanner:ParseStatLine(line)
             elseif statUpper:find("VERS") then
                 stats.VERSATILITY = (stats.VERSATILITY or 0) + numValue
             end
-            
+
             ::continue2::
         end
     end
-    
+
     return next(stats) and stats or nil
 end
 
 function StatScanner:ScanItemTooltip(itemLink)
     if not itemLink then return nil end
-    
+
     if itemCache[itemLink] then
         return itemCache[itemLink].stats, itemCache[itemLink].trait, itemCache[itemLink].itemLevel
     end
-    
+
     scanTooltip:ClearLines()
     scanTooltip:SetHyperlink(itemLink)
-    
+
     local stats = {
         HASTE = 0,
         CRIT = 0,
         MASTERY = 0,
         VERSATILITY = 0,
     }
-    
+
     local trait = nil
-    
+
     local itemID = tonumber(itemLink:match("item:(%d+)"))
     local itemLevel = 0
     if itemID then
@@ -136,7 +136,7 @@ function StatScanner:ScanItemTooltip(itemLink)
             itemLevel = itemInfo[4]
         end
     end
-    
+
     local numLines = scanTooltip:NumLines()
     for i = 1, numLines do
         local leftText = _G["LemixGearOptimizerScanTooltipTextLeft" .. i]
@@ -146,20 +146,20 @@ function StatScanner:ScanItemTooltip(itemLink)
                 if addon.db and addon.db.settings and addon.db.settings.debug then
                     addon:Debug("Tooltip line " .. i .. ": " .. line)
                 end
-                
+
                 local lineStats = self:ParseStatLine(line)
                 if lineStats then
                     for stat, value in pairs(lineStats) do
                         stats[stat] = stats[stat] + value
                     end
                 end
-                
+
                 if not trait then
                     trait = self:ParseTraitLine(line)
                 end
             end
         end
-        
+
         local rightText = _G["LemixGearOptimizerScanTooltipTextRight" .. i]
         if rightText then
             local line = rightText:GetText()
@@ -173,7 +173,7 @@ function StatScanner:ScanItemTooltip(itemLink)
             end
         end
     end
-    
+
     local hasStats = false
     for _, value in pairs(stats) do
         if value > 0 then
@@ -181,7 +181,7 @@ function StatScanner:ScanItemTooltip(itemLink)
             break
         end
     end
-    
+
     if hasStats and addon.db and addon.db.settings and addon.db.settings.debug then
         local debugStr = "Parsed stats for " .. itemLink .. ": "
         for stat, value in pairs(stats) do
@@ -191,32 +191,32 @@ function StatScanner:ScanItemTooltip(itemLink)
         end
         addon:Debug(debugStr)
     end
-    
+
     local cacheData = {
         stats = hasStats and stats or nil,
         trait = trait,
         itemLevel = itemLevel,
     }
-    
+
     itemCache[itemLink] = cacheData
     return cacheData.stats, cacheData.trait, cacheData.itemLevel
 end
 
 function StatScanner:ParseTraitLine(line)
     if not line then return nil end
-    
+
     for _, trait in ipairs(KNOWN_TRAITS) do
         if line:find(trait) then
             return trait
         end
     end
-    
+
     return nil
 end
 
 function StatScanner:GetEquippedItems()
     local equipped = {}
-    
+
     for slotID, slotName in pairs(INVENTORY_SLOTS) do
         local itemLink = GetInventoryItemLink("player", slotID)
         if itemLink then
@@ -231,13 +231,13 @@ function StatScanner:GetEquippedItems()
             }
         end
     end
-    
+
     return equipped
 end
 
 function StatScanner:GetBagItems()
     local bagItems = {}
-    
+
     for bag = 0, 4 do
         local numSlots = C_Container.GetContainerNumSlots(bag)
         if numSlots then
@@ -246,7 +246,7 @@ function StatScanner:GetBagItems()
                 if itemInfo and itemInfo.hyperlink then
                     local itemLink = itemInfo.hyperlink
                     local itemEquipLoc = select(4, C_Item.GetItemInfoInstant(itemLink))
-                    
+
                     if itemEquipLoc and itemEquipLoc ~= "" and itemEquipLoc ~= "INVTYPE_BAG" then
                         local stats, trait, itemLevel = self:ScanItemTooltipFromBag(bag, slot, itemLink)
                         local slotIDs = self:GetSlotIDsFromEquipLoc(itemEquipLoc)
@@ -254,7 +254,7 @@ function StatScanner:GetBagItems()
                             if not bagItems[slotID] then
                                 bagItems[slotID] = {}
                             end
-                            
+
                             table.insert(bagItems[slotID], {
                                 itemLink = itemLink,
                                 bag = bag,
@@ -270,30 +270,30 @@ function StatScanner:GetBagItems()
             end
         end
     end
-    
+
     return bagItems
 end
 
 function StatScanner:ScanItemTooltipFromBag(bag, slot, itemLink)
     if not itemLink then return nil end
-    
+
     if itemCache[itemLink] then
         return itemCache[itemLink].stats, itemCache[itemLink].trait, itemCache[itemLink].itemLevel
     end
-    
+
     scanTooltip:ClearLines()
     scanTooltip:SetOwner(UIParent, "ANCHOR_NONE")
     scanTooltip:SetBagItem(bag, slot)
-    
+
     local stats = {
         HASTE = 0,
         CRIT = 0,
         MASTERY = 0,
         VERSATILITY = 0,
     }
-    
+
     local trait = nil
-    
+
     local itemID = tonumber(itemLink:match("item:(%d+)"))
     local itemLevel = 0
     if itemID then
@@ -302,7 +302,7 @@ function StatScanner:ScanItemTooltipFromBag(bag, slot, itemLink)
             itemLevel = itemInfo[4]
         end
     end
-    
+
     local numLines = scanTooltip:NumLines()
     for i = 1, numLines do
         local leftText = _G["LemixGearOptimizerScanTooltipTextLeft" .. i]
@@ -312,23 +312,23 @@ function StatScanner:ScanItemTooltipFromBag(bag, slot, itemLink)
                 if addon.db and addon.db.settings and addon.db.settings.debug then
                     addon:Debug("Bag item line " .. i .. ": " .. line)
                 end
-                
+
                 local lineStats = self:ParseStatLine(line)
                 if lineStats then
                     for stat, value in pairs(lineStats) do
                         stats[stat] = stats[stat] + value
                     end
                 end
-                
+
                 if not trait then
                     trait = self:ParseTraitLine(line)
                 end
             end
         end
     end
-    
+
     scanTooltip:Hide()
-    
+
     local hasStats = false
     for _, value in pairs(stats) do
         if value > 0 then
@@ -336,7 +336,7 @@ function StatScanner:ScanItemTooltipFromBag(bag, slot, itemLink)
             break
         end
     end
-    
+
     if hasStats and addon.db and addon.db.settings and addon.db.settings.debug then
         local debugStr = "Parsed bag item " .. itemLink .. ": "
         for stat, value in pairs(stats) do
@@ -346,13 +346,13 @@ function StatScanner:ScanItemTooltipFromBag(bag, slot, itemLink)
         end
         addon:Debug(debugStr)
     end
-    
+
     local cacheData = {
         stats = hasStats and stats or nil,
         trait = trait,
         itemLevel = itemLevel,
     }
-    
+
     itemCache[itemLink] = cacheData
     return cacheData.stats, cacheData.trait, cacheData.itemLevel
 end
@@ -379,7 +379,7 @@ function StatScanner:GetSlotIDFromEquipLoc(equipLoc)
         INVTYPE_SHIELD = 17,
         INVTYPE_HOLDABLE = 17,
     }
-    
+
     return mapping[equipLoc]
 end
 
@@ -396,7 +396,7 @@ end
 
 function StatScanner:GetAllAvailableGear()
     local allGear = {}
-    
+
     local equipped = self:GetEquippedItems()
     for slotID, item in pairs(equipped) do
         if not allGear[slotID] then
@@ -404,7 +404,7 @@ function StatScanner:GetAllAvailableGear()
         end
         table.insert(allGear[slotID], item)
     end
-    
+
     local bagItems = self:GetBagItems()
     for slotID, items in pairs(bagItems) do
         if not allGear[slotID] then
@@ -414,7 +414,7 @@ function StatScanner:GetAllAvailableGear()
             table.insert(allGear[slotID], item)
         end
     end
-    
+
     return allGear
 end
 
@@ -425,7 +425,7 @@ function StatScanner:CalculateTotalStats(itemSet)
         MASTERY = 0,
         VERSATILITY = 0,
     }
-    
+
     for slotID, item in pairs(itemSet) do
         if item and item.stats and not TRAIT_SLOTS[slotID] then
             for stat, value in pairs(item.stats) do
@@ -433,13 +433,13 @@ function StatScanner:CalculateTotalStats(itemSet)
             end
         end
     end
-    
+
     return total
 end
 
 function StatScanner:GetEquippedTraits()
     local traits = {}
-    
+
     for slotID in pairs(TRAIT_SLOTS) do
         local itemLink = GetInventoryItemLink("player", slotID)
         if itemLink then
@@ -449,7 +449,7 @@ function StatScanner:GetEquippedTraits()
             end
         end
     end
-    
+
     return traits
 end
 

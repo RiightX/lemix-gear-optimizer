@@ -1,17 +1,17 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/">
-    
+
     <Frame name="LemixGearOptimizerConfigFrame" parent="UIParent" frameStrata="DIALOG" hidden="true" enableMouse="true" movable="true" clampedToScreen="true">
         <Size x="600" y="500"/>
         <Anchors>
             <Anchor point="CENTER"/>
         </Anchors>
-        
+
         <Backdrop bgFile="Interface\DialogFrame\UI-DialogBox-Background" edgeFile="Interface\DialogFrame\UI-DialogBox-Border" tile="true">
             <BackgroundInsets left="11" right="12" top="12" bottom="11"/>
             <TileSize val="32"/>
             <EdgeSize val="32"/>
         </Backdrop>
-        
+
         <Layers>
             <Layer level="ARTWORK">
                 <Texture parentKey="TitleBg" file="Interface\DialogFrame\UI-DialogBox-Header">
@@ -20,7 +20,7 @@
                         <Anchor point="TOP" x="0" y="12"/>
                     </Anchors>
                 </Texture>
-                
+
                 <FontString parentKey="Title" inherits="GameFontNormal">
                     <Anchors>
                         <Anchor point="TOP" relativeKey="$parent.TitleBg" x="0" y="-14"/>
@@ -28,20 +28,20 @@
                 </FontString>
             </Layer>
         </Layers>
-        
+
         <Frames>
             <Button name="$parentCloseButton" inherits="UIPanelCloseButton">
                 <Anchors>
                     <Anchor point="TOPRIGHT" x="-5" y="-5"/>
                 </Anchors>
             </Button>
-            
+
             <ScrollFrame parentKey="ScrollFrame" inherits="UIPanelScrollFrameTemplate">
                 <Size x="560" y="380"/>
                 <Anchors>
                     <Anchor point="TOPLEFT" x="20" y="-50"/>
                 </Anchors>
-                
+
                 <ScrollChild>
                     <Frame parentKey="Content">
                         <Size x="540" y="600"/>
@@ -49,7 +49,7 @@
                 </ScrollChild>
             </ScrollFrame>
         </Frames>
-        
+
         <Scripts>
             <OnLoad>
                 self:RegisterForDrag("LeftButton")
@@ -62,19 +62,19 @@
             </OnDragStop>
         </Scripts>
     </Frame>
-    
+
     <Frame name="LemixGearOptimizerProfileSelector" parent="UIParent" frameStrata="DIALOG" hidden="true" enableMouse="true">
         <Size x="300" y="250"/>
         <Anchors>
             <Anchor point="CENTER"/>
         </Anchors>
-        
+
         <Backdrop bgFile="Interface\DialogFrame\UI-DialogBox-Background" edgeFile="Interface\DialogFrame\UI-DialogBox-Border" tile="true">
             <BackgroundInsets left="11" right="12" top="12" bottom="11"/>
             <TileSize val="32"/>
             <EdgeSize val="32"/>
         </Backdrop>
-        
+
         <Layers>
             <Layer level="ARTWORK">
                 <FontString parentKey="Title" inherits="GameFontNormalLarge">
@@ -84,20 +84,20 @@
                 </FontString>
             </Layer>
         </Layers>
-        
+
         <Frames>
             <Button name="$parentCloseButton" inherits="UIPanelCloseButton">
                 <Anchors>
                     <Anchor point="TOPRIGHT" x="-5" y="-5"/>
                 </Anchors>
             </Button>
-            
+
             <ScrollFrame parentKey="ScrollFrame" inherits="UIPanelScrollFrameTemplate">
                 <Size x="260" y="150"/>
                 <Anchors>
                     <Anchor point="TOP" x="0" y="-50"/>
                 </Anchors>
-                
+
                 <ScrollChild>
                     <Frame parentKey="Content">
                         <Size x="240" y="200"/>
@@ -106,6 +106,6 @@
             </ScrollFrame>
         </Frames>
     </Frame>
-    
+
 </Ui>
 

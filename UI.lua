@@ -53,7 +53,7 @@ function UI:SetupConfigFrame()
         self:OptimizeCurrentProfile()
     end)
     content.optimizeButton = optimizeButton
-    
+
     local showStatsButton = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
     showStatsButton:SetSize(150, 25)
     showStatsButton:SetPoint("LEFT", optimizeButton, "RIGHT", 10, 0)
@@ -271,11 +271,11 @@ end
 
 function UI:ShowEditProfileDialog(profile)
     if not profile then return end
-    
+
     if not profile.traits then
         profile.traits = {}
     end
-    
+
     local editFrame = CreateFrame("Frame", "LemixEditProfileFrame", UIParent, "BackdropTemplate")
     editFrame:SetSize(500, 550)
     editFrame:SetPoint("CENTER")
@@ -289,30 +289,30 @@ function UI:ShowEditProfileDialog(profile)
     })
     editFrame:SetFrameStrata("DIALOG")
     editFrame:EnableMouse(true)
-    
+
     local scrollChild = CreateFrame("Frame", nil, editFrame)
     scrollChild:SetSize(460, 700)
-    
+
     local scrollFrame = CreateFrame("ScrollFrame", nil, editFrame, "UIPanelScrollFrameTemplate")
     scrollFrame:SetPoint("TOPLEFT", 10, -50)
     scrollFrame:SetPoint("BOTTOMRIGHT", -30, 50)
     scrollFrame:SetScrollChild(scrollChild)
-    
+
     local title = editFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     title:SetPoint("TOP", 0, -20)
     title:SetText("Edit Profile: " .. profile.name)
-    
+
     local yOffset = -10
 
     local primaryLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     primaryLabel:SetPoint("TOPLEFT", 0, yOffset)
     primaryLabel:SetText("Primary Stat:")
-    
+
     local primaryDropdown = CreateFrame("Frame", "LemixPrimaryStatDropdown", scrollChild, "UIDropDownMenuTemplate")
     primaryDropdown:SetPoint("LEFT", primaryLabel, "RIGHT", 0, -3)
     UIDropDownMenu_SetWidth(primaryDropdown, 100)
     UIDropDownMenu_SetText(primaryDropdown, profile.primaryStat or "None")
-    
+
     UIDropDownMenu_Initialize(primaryDropdown, function(self, level)
         local stats = {"HASTE", "CRIT", "MASTERY", "VERSATILITY"}
         for _, stat in ipairs(stats) do
@@ -325,26 +325,26 @@ function UI:ShowEditProfileDialog(profile)
             UIDropDownMenu_AddButton(info)
         end
     end)
-    
+
     yOffset = yOffset - 40
-    
+
     local thresholdLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     thresholdLabel:SetPoint("TOPLEFT", 0, yOffset)
     thresholdLabel:SetText("Stat Thresholds:")
-    
+
     yOffset = yOffset - 30
-    
+
     local thresholdContainer = CreateFrame("Frame", nil, scrollChild)
     thresholdContainer:SetSize(360, 100)
     thresholdContainer:SetPoint("TOPLEFT", 0, yOffset)
-    
+
     local thresholdY = 0
     local stats = {"CRIT", "HASTE", "MASTERY"}
     for _, stat in ipairs(stats) do
         local statLabel = thresholdContainer:CreateFontString(nil, "ARTWORK", "GameFontNormal")
         statLabel:SetPoint("TOPLEFT", 0, thresholdY)
         statLabel:SetText(stat .. ":")
-        
+
         local editBox = CreateFrame("EditBox", nil, thresholdContainer, "InputBoxTemplate")
         editBox:SetSize(60, 20)
         editBox:SetPoint("LEFT", statLabel, "RIGHT", 10, 0)
@@ -367,29 +367,29 @@ function UI:ShowEditProfileDialog(profile)
             end
             self:ClearFocus()
         end)
-        
+
         thresholdY = thresholdY - 30
     end
-    
+
     yOffset = yOffset - 100
-    
+
     local traitLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     traitLabel:SetPoint("TOPLEFT", 0, yOffset)
     traitLabel:SetText("Legion Remix Traits:")
-    
+
     yOffset = yOffset - 25
-    
+
     local traitHelpText = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
     traitHelpText:SetPoint("TOPLEFT", 0, yOffset)
     traitHelpText:SetText("(Trinkets, Rings, Necks)")
     traitHelpText:SetTextColor(0.7, 0.7, 0.7)
-    
+
     yOffset = yOffset - 25
-    
+
     local traitContainer = CreateFrame("Frame", nil, scrollChild)
     traitContainer:SetSize(460, 250)
     traitContainer:SetPoint("TOPLEFT", 0, yOffset)
-    
+
     local traitY = 0
     local traits = {
         "Touch of Malice",
@@ -398,14 +398,14 @@ function UI:ShowEditProfileDialog(profile)
         "Thunderlord's Wrath",
         "Fel Meteor",
     }
-    
+
     for _, trait in ipairs(traits) do
         local traitLabelText = traitContainer:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
         traitLabelText:SetPoint("TOPLEFT", 0, traitY)
         traitLabelText:SetText(trait .. ":")
         traitLabelText:SetWidth(200)
         traitLabelText:SetJustifyH("LEFT")
-        
+
         local traitEditBox = CreateFrame("EditBox", nil, traitContainer, "InputBoxTemplate")
         traitEditBox:SetSize(40, 20)
         traitEditBox:SetPoint("LEFT", traitLabelText, "RIGHT", 10, 0)
@@ -429,7 +429,7 @@ function UI:ShowEditProfileDialog(profile)
             end
             self:ClearFocus()
         end)
-        
+
         traitY = traitY - 30
     end
 
@@ -489,13 +489,13 @@ function UI:OptimizeCurrentProfile()
         addon:Print("No spec selected")
         return
     end
-    
+
     local activeProfile = addon.ProfileManager:GetActiveProfile(specID)
     if not activeProfile then
         addon:Print("No active profile set")
         return
     end
-    
+
     addon.GearOptimizer:OptimizeAndSave(activeProfile.name, specID)
 end
 
@@ -504,10 +504,10 @@ function UI:ShowCurrentStats()
         addon:Print("StatScanner not available")
         return
     end
-    
+
     local equipped = addon.StatScanner:GetEquippedItems()
     local totals = addon.StatScanner:CalculateTotalStats(equipped)
-    
+
     addon:Print("=== Currently Equipped Stats ===")
     local statOrder = {"CRIT", "HASTE", "MASTERY", "VERSATILITY"}
     for _, stat in ipairs(statOrder) do
@@ -516,7 +516,7 @@ function UI:ShowCurrentStats()
             addon:Print(stat .. ": " .. string.format("%.1f%%", value))
         end
     end
-    
+
     local traits = addon.StatScanner:GetEquippedTraits()
     if next(traits) then
         addon:Print("=== Current Traits ===")

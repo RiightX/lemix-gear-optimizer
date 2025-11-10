@@ -33,31 +33,31 @@ function addon:OnInitialize()
             }
         }
     end
-    
+
     addon.db = LemixGearOptimizerDB
-    
+
     self:Print("Initialized v" .. self.version)
 end
 
 function addon:OnEnable()
     self:Print("Loaded! Type /lgo to open configuration")
-    
+
     if addon.ProfileManager then
         addon.ProfileManager:Initialize()
     end
-    
+
     if addon.StatScanner then
         addon.StatScanner:Initialize()
     end
-    
+
     if addon.GearOptimizer then
         addon.GearOptimizer:Initialize()
     end
-    
+
     if addon.EquipmentManager then
         addon.EquipmentManager:Initialize()
     end
-    
+
     if addon.UI then
         addon.UI:Initialize()
     end
@@ -77,7 +77,7 @@ SLASH_LEMIXGEAROPTIMIZER1 = "/lgo"
 SLASH_LEMIXGEAROPTIMIZER2 = "/lemixgear"
 SlashCmdList["LEMIXGEAROPTIMIZER"] = function(msg)
     msg = msg:lower():trim()
-    
+
     if msg == "stats" or msg == "show" then
         if addon.UI and addon.UI.ShowCurrentStats then
             addon.UI:ShowCurrentStats()

@@ -13,7 +13,7 @@ function EquipmentManager:Initialize()
     self.frame:SetScript("OnEvent", function(frame, event, ...)
         self:OnEvent(event, ...)
     end)
-    
+
     addon:Debug("EquipmentManager initialized")
 end
 
@@ -32,18 +32,18 @@ function EquipmentManager:OnSpecChange()
     if not addon.db.settings.autoEquipOnSpecChange then
         return
     end
-    
+
     local specID = addon.ProfileManager:GetCurrentSpec()
     if not specID then return end
-    
+
     local activeProfile = addon.ProfileManager:GetActiveProfile(specID)
     if not activeProfile then
         addon:Debug("No active profile for spec " .. specID)
         return
     end
-    
+
     addon:Print("Spec changed, auto-equipping profile: " .. activeProfile.name)
-    
+
     self:EquipProfile(activeProfile.name, specID)
 end
 
@@ -53,15 +53,15 @@ function EquipmentManager:EquipProfile(profileName, specID)
         pendingEquip = {profile = profileName, specID = specID}
         return false
     end
-    
+
     specID = specID or addon.ProfileManager:GetCurrentSpec()
     if not specID then return false end
-    
+
     local optimizedData = addon.GearOptimizer:GetOptimizedSet(profileName, specID)
-    
+
     if not optimizedData or not optimizedData.gearSet then
         addon:Print("No optimized gear set found. Run optimization first.")
-        
+
         local success = addon.GearOptimizer:OptimizeAndSave(profileName, specID)
         if success then
             optimizedData = addon.GearOptimizer:GetOptimizedSet(profileName, specID)
@@ -69,9 +69,9 @@ function EquipmentManager:EquipProfile(profileName, specID)
             return false
         end
     end
-    
+
     local gearSet = optimizedData.gearSet
-    
+
     for slotID, item in pairs(gearSet) do
         if item.bag and item.slot then
             local currentItemLink = GetInventoryItemLink("player", slotID)
@@ -81,7 +81,7 @@ function EquipmentManager:EquipProfile(profileName, specID)
             end
         end
     end
-    
+
     addon:Print("Equipped profile: " .. profileName)
     return true
 end
@@ -91,12 +91,12 @@ function EquipmentManager:CreateEquipmentSet(profileName, gearSet, specID)
         addon:Print("Cannot create equipment set during combat")
         return false
     end
-    
+
     specID = specID or addon.ProfileManager:GetCurrentSpec()
     if not specID then return false end
-    
+
     local setName = "LGO_" .. profileName .. "_" .. specID
-    
+
     local existingSets = C_EquipmentSet.GetEquipmentSetIDs()
     for _, setID in ipairs(existingSets) do
         local name = C_EquipmentSet.GetEquipmentSetInfo(setID)
@@ -104,7 +104,7 @@ function EquipmentManager:CreateEquipmentSet(profileName, gearSet, specID)
             C_EquipmentSet.DeleteEquipmentSet(setID)
         end
     end
-    
+
     for slotID, item in pairs(gearSet) do
         if item.bag and item.slot then
             local currentItemLink = GetInventoryItemLink("player", slotID)
@@ -114,7 +114,7 @@ function EquipmentManager:CreateEquipmentSet(profileName, gearSet, specID)
             end
         end
     end
-    
+
     C_Timer.After(0.5, function()
         local newSetID = C_EquipmentSet.CreateEquipmentSet(setName)
         if newSetID then
@@ -123,16 +123,16 @@ function EquipmentManager:CreateEquipmentSet(profileName, gearSet, specID)
             addon:Print("Failed to create equipment set")
         end
     end)
-    
+
     return true
 end
 
 function EquipmentManager:UseEquipmentSet(profileName, specID)
     specID = specID or addon.ProfileManager:GetCurrentSpec()
     if not specID then return false end
-    
+
     local setName = "LGO_" .. profileName .. "_" .. specID
-    
+
     local existingSets = C_EquipmentSet.GetEquipmentSetIDs()
     for _, setID in ipairs(existingSets) do
         local name = C_EquipmentSet.GetEquipmentSetInfo(setID)
@@ -141,13 +141,13 @@ function EquipmentManager:UseEquipmentSet(profileName, specID)
                 addon:Print("Cannot equip set during combat")
                 return false
             end
-            
+
             C_EquipmentSet.UseEquipmentSet(setID)
             addon:Print("Equipped set: " .. setName)
             return true
         end
     end
-    
+
     addon:Print("Equipment set not found: " .. setName)
     return false
 end
@@ -155,9 +155,9 @@ end
 function EquipmentManager:GetEquipmentSetForProfile(profileName, specID)
     specID = specID or addon.ProfileManager:GetCurrentSpec()
     if not specID then return nil end
-    
+
     local setName = "LGO_" .. profileName .. "_" .. specID
-    
+
     local existingSets = C_EquipmentSet.GetEquipmentSetIDs()
     for _, setID in ipairs(existingSets) do
         local name = C_EquipmentSet.GetEquipmentSetInfo(setID)
@@ -165,13 +165,13 @@ function EquipmentManager:GetEquipmentSetForProfile(profileName, specID)
             return setID
         end
     end
-    
+
     return nil
 end
 
 function EquipmentManager:HookEquipmentManagerFrame()
     if not PaperDollFrame then return end
-    
+
     if addon.UI and addon.UI.CreateEquipmentManagerButton then
         addon.UI:CreateEquipmentManagerButton()
     end
