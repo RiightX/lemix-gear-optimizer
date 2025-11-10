@@ -2,7 +2,7 @@
 ## Title: Lemix Gear Optimizer
 ## Notes: Optimizes gear for Legion Remix based on stat priorities
 ## Author: YourName
-## Version: 0.1.6
+## Version: 0.2.0
 ## SavedVariables: LemixGearOptimizerDB
 ## DefaultState: enabled
 
