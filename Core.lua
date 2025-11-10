@@ -82,6 +82,20 @@ SlashCmdList["LEMIXGEAROPTIMIZER"] = function(msg)
         if addon.UI and addon.UI.ShowCurrentStats then
             addon.UI:ShowCurrentStats()
         end
+    elseif msg == "debug" or msg == "debug on" then
+        addon.db.settings.debug = true
+        addon:Print("Debug mode enabled. Hover over items to see tooltip parsing.")
+        if addon.StatScanner then
+            addon.StatScanner:ClearCache()
+        end
+    elseif msg == "debug off" then
+        addon.db.settings.debug = false
+        addon:Print("Debug mode disabled")
+    elseif msg == "clear" or msg == "clearcache" then
+        if addon.StatScanner then
+            addon.StatScanner:ClearCache()
+            addon:Print("Item cache cleared")
+        end
     else
         if addon.UI and addon.UI.ToggleConfigWindow then
             addon.UI:ToggleConfigWindow()

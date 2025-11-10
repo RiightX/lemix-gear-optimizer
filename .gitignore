@@ -9,3 +9,5 @@ bin/
 *.md
 !README.md
 !CHANGELOG.md
+
+otheraddons/

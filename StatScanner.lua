@@ -66,16 +66,43 @@ function StatScanner:ParseStatLine(line)
     
     local stats = {}
     
-    for value, stat in line:gmatch("(%d+%.?%d*)%%%s*([%a%s]+)") do
+    for value, stat in line:gmatch("([%d%.]+)%%%s*([%a%s]+)") do
+        local numValue = tonumber(value)
+        if not numValue then goto continue end
+        
         local statUpper = stat:upper():gsub("%s+", "")
-        if statUpper == "HASTE" then
-            stats.HASTE = (stats.HASTE or 0) + tonumber(value)
+        
+        if statUpper == "HASTE" or statUpper:find("HASTE") then
+            stats.HASTE = (stats.HASTE or 0) + numValue
         elseif statUpper:find("CRIT") then
-            stats.CRIT = (stats.CRIT or 0) + tonumber(value)
+            stats.CRIT = (stats.CRIT or 0) + numValue
         elseif statUpper:find("MAST") then
-            stats.MASTERY = (stats.MASTERY or 0) + tonumber(value)
+            stats.MASTERY = (stats.MASTERY or 0) + numValue
         elseif statUpper:find("VERS") then
-            stats.VERSATILITY = (stats.VERSATILITY or 0) + tonumber(value)
+            stats.VERSATILITY = (stats.VERSATILITY or 0) + numValue
+        end
+        
+        ::continue::
+    end
+    
+    if not next(stats) then
+        for stat, value in line:gmatch("([%a%s]+)%s+([%d%.]+)%%") do
+            local numValue = tonumber(value)
+            if not numValue then goto continue2 end
+            
+            local statUpper = stat:upper():gsub("%s+", "")
+            
+            if statUpper == "HASTE" or statUpper:find("HASTE") then
+                stats.HASTE = (stats.HASTE or 0) + numValue
+            elseif statUpper:find("CRIT") then
+                stats.CRIT = (stats.CRIT or 0) + numValue
+            elseif statUpper:find("MAST") then
+                stats.MASTERY = (stats.MASTERY or 0) + numValue
+            elseif statUpper:find("VERS") then
+                stats.VERSATILITY = (stats.VERSATILITY or 0) + numValue
+            end
+            
+            ::continue2::
         end
     end
     
@@ -100,7 +127,15 @@ function StatScanner:ScanItemTooltip(itemLink)
     }
     
     local trait = nil
-    local itemLevel = select(4, C_Item.GetItemInfo(itemLink)) or 0
+    
+    local itemID = tonumber(itemLink:match("item:(%d+)"))
+    local itemLevel = 0
+    if itemID then
+        local itemInfo = {C_Item.GetItemInfo(itemLink)}
+        if itemInfo and itemInfo[4] then
+            itemLevel = itemInfo[4]
+        end
+    end
     
     local numLines = scanTooltip:NumLines()
     for i = 1, numLines do
@@ -108,6 +143,10 @@ function StatScanner:ScanItemTooltip(itemLink)
         if leftText then
             local line = leftText:GetText()
             if line then
+                if addon.db and addon.db.settings and addon.db.settings.debug then
+                    addon:Debug("Tooltip line " .. i .. ": " .. line)
+                end
+                
                 local lineStats = self:ParseStatLine(line)
                 if lineStats then
                     for stat, value in pairs(lineStats) do
@@ -141,6 +180,16 @@ function StatScanner:ScanItemTooltip(itemLink)
             hasStats = true
             break
         end
+    end
+    
+    if hasStats and addon.db and addon.db.settings and addon.db.settings.debug then
+        local debugStr = "Parsed stats for " .. itemLink .. ": "
+        for stat, value in pairs(stats) do
+            if value > 0 then
+                debugStr = debugStr .. stat .. "=" .. value .. "% "
+            end
+        end
+        addon:Debug(debugStr)
     end
     
     local cacheData = {
