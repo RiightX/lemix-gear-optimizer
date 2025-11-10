@@ -2,7 +2,7 @@ local addonName, addon = ...
 
 LemixGearOptimizer = addon
 addon.name = addonName
-addon.version = "0.1.2"
+addon.version = "0.1.3"
 
 local frame = CreateFrame("Frame")
 addon.frame = frame
